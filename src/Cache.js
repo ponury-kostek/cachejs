@@ -59,7 +59,7 @@ class Cache {
 	 * @returns {*}
 	 */
 	get(key) {
-		key = typeof key == 'string' ? key : String(key).valueOf();
+		key = typeof key == 'String' ? key : String(key).valueOf();
 		return this.data[this.keyIndex[key]];
 	}
 
@@ -69,12 +69,12 @@ class Cache {
 	 * @param {*} value
 	 */
 	set(key, value) {
-		key = typeof key == 'string' ? key : String(key).valueOf();
+		key = typeof key == 'String' ? key : String(key).valueOf();
 		if (this.has(key)) {
 			this.ttlIndex[key] = utls.microtime();
 			this.data[this.keyIndex[key]] = value;
 		} else {
-			let idx = this.data.push(value);
+			let idx = this.data.push(value) - 1;
 			this.keyIndex[key] = idx;
 			this.keyRindex[idx] = key;
 			this.ttlIndex[key] = utls.microtime();
@@ -96,7 +96,7 @@ class Cache {
 	 * @returns {Boolean}
 	 */
 	has(key) {
-		key = typeof key == 'string' ? key : String(key).valueOf();
+		key = typeof key == 'String' ? key : String(key).valueOf();
 		if (this.keyIndex[key] !== undefined) {
 			if (this.data[this.keyIndex[key]] !== undefined) {
 				return true;
@@ -121,7 +121,7 @@ class Cache {
 	 * @returns {Array}
 	 */
 	keys() {
-		return Object.getOwnPropertyNames(this.keyIndex);
+		return Object.getOwnPropertyNames(this.keyIndex).filter(k => this.has(k), this);
 	}
 
 	/**
@@ -129,8 +129,8 @@ class Cache {
 	 * @returns {Array}
 	 */
 	values() {
-		return this.data.map((v) => {
-			return v;
+		return this.data.filter((v) => {
+			return v !== undefined;
 		});
 	}
 
@@ -139,12 +139,16 @@ class Cache {
 	 * @param {String} key
 	 */
 	delete(key) {
-		key = typeof key == 'string' ? key : String(key).valueOf();
+		key = typeof key == 'String' ? key : String(key).valueOf();
 		if (this.has(key)) {
 			this.data[this.keyIndex[key]] = undefined;
 			this.keyRindex[this.keyIndex[key]] = undefined;
 			this.keyIndex[key] = undefined;
 			this.ttlIndex[key] = undefined;
+			/*delete this.data[this.keyIndex[key]];
+			delete this.keyRindex[this.keyIndex[key]];
+			delete this.keyIndex[key];
+			delete this.ttlIndex[key];*/
 			this.count--;
 		}
 	}
@@ -158,27 +162,36 @@ class Cache {
 		}
 		this.gcInProgress = true;
 		var newKeyIndex = {}, newKeyRindex = [], newTtlIndex = {}, newData = [], self = this;
+		// console.time('GC TTL');
 		this.keyRindex.map((key) => {
 			if (this.ttlIndex.hasOwnProperty(key) && utls.microtime() - this.ttlIndex[key] > this.ttl) {
 				this.delete(key);
 			}
 		});
+		// console.timeEnd('GC TTL');
 		this.count = 0;
+		// console.time('GC TTL filter');
+		this.keyRindex = this.keyRindex.filter(v => v !== undefined);
+		// console.timeEnd('GC TTL filter');
+		// console.time('GC TTL rebuild');
 		this.keyRindex.map((key, index) => {
 			newKeyIndex[key] = newData.push(self.data[index]);
 			newKeyRindex[newKeyIndex[key]] = key;
 			newTtlIndex[key] = self.ttlIndex[key];
 			self.count++;
 		});
+		// console.timeEnd('GC TTL rebuild');
+		// console.time('GC Reassign');
 		this.data = newData;
 		this.keyIndex = newKeyIndex;
 		this.keyRindex = newKeyRindex;
 		this.ttlIndex = newTtlIndex;
 
 		newData = newKeyIndex = newKeyRindex = newTtlIndex = undefined;
-
+		// console.timeEnd('GC Reassign');
 		if (this.count > this.limit) {
 			//FIXME
+			console.log("Limit");
 			let diff = this.count - this.limit;
 			let tbd = this.keyRindex.splice(0, diff);
 			tbd.forEach((v) => {
