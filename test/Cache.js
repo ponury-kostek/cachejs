@@ -133,6 +133,7 @@ describe('Cache', () => {
 				cache.delete(key);
 			});
 			it('get(key)', () => {
+				assert.thro
 				assert.deepEqual(cache.get(key), undefined);
 			});
 			it('values()', () => {
@@ -147,11 +148,23 @@ describe('Cache', () => {
 		});
 	});
 	describe('GC', () => {
-		before(() => {
+		let key = 'someKey';
+		let value = {
+			someProperty : "somePropertyValue",
+			someMethod : () => {
+				return 'someMethodResult';
+			}
+		};
+		beforeEach(() => {
 			cache = new Cache();
+			cache.set(key, value);
 		});
 		it('is running', () => {
 			assert.equal(cache.gcIsRunning(), true);
+		});
+		it('is running (disableGC:true)', () => {
+			cache = new Cache({disableGC : true});
+			assert.equal(cache.gcIsRunning(), false);
 		});
 		it('run', () => {
 			cache.gc();
