@@ -47,7 +47,6 @@ class Cache {
 		this.gci = options.gci;
 		this.disableGC = !!options.disableGC;
 		this.count = 0;
-		this.gcInProgress = false;
 		this._stopGC = false;
 		this.clear();
 		if (!this.disableGC && this.gci > 0) {
@@ -162,10 +161,6 @@ class Cache {
 	 * Garbage collecting
 	 */
 	gc() {
-		if (this.gcInProgress) {
-			return;
-		}
-		this.gcInProgress = true;
 		var newKeyIndex = {}, newKeyRindex = [], newTtlIndex = {}, newData = [], self = this;
 		// console.time('GC TTL');
 		this.keyRindex.map((key) => {
@@ -195,7 +190,6 @@ class Cache {
 
 		newData = newKeyIndex = newKeyRindex = newTtlIndex = undefined;
 
-		this.gcInProgress = false;
 		if (!this.disableGC && !this._stopGC) {
 			this.gcStart();
 		}
