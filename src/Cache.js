@@ -12,10 +12,11 @@ class Cache {
 
 	/**
 	 * Constructor
-	 * @param {object} [options]
-	 * @param {number} [options.gci=1000] GC interval in ms
-	 * @param {number} [options.limit=1048576] Cache entries limit
-	 * @param {number} [options.ttl=10] Entry TTL in sec
+	 * @param {Object} [options]
+	 * @param {Number} [options.gci=1000] GC interval in ms
+	 * @param {Number} [options.limit=1048576] Cache entries limit
+	 * @param {Number} [options.ttl=10] Entry TTL in sec
+	 * @param {Boolean} [options.disableGC] Disables GC
 	 */
 	constructor(options) {
 		options = options || {};
@@ -44,11 +45,12 @@ class Cache {
 		this.limit = options.limit;
 		this.ttl = options.ttl;
 		this.gci = options.gci;
+		this.disableGC = !!options.disableGC;
 		this.count = 0;
 		this.gcInProgress = false;
 		this._stopGC = false;
 		this.clear();
-		if (this.gci > 0) {
+		if (!this.disableGC && this.gci > 0) {
 			this.gcStart();
 		}
 	}
@@ -60,21 +62,28 @@ class Cache {
 	 */
 	get(key) {
 		// key = typeof key == 'String' ? key : String(key).valueOf();
-		return this.data[this.keyIndex[key]];
+		return this.data[this.keyIndex[key]] !== undefined ? this.data[this.keyIndex[key]].value : undefined;
 	}
 
 	/**
 	 * Sets
 	 * @param {String} key
 	 * @param {*} value
+	 * @param {Number} ttl
 	 */
-	set(key, value) {
+	set(key, value, ttl) {
 		// key = typeof key == 'String' ? key : String(key).valueOf();
 		if (this.has(key)) {
 			this.ttlIndex[key] = utls.microtime();
-			this.data[this.keyIndex[key]] = value;
+			if (value !== undefined) {
+				this.data[this.keyIndex[key]].value = value;
+			}
+			this.data[this.keyIndex[key]].ttl = ttl || this.ttl;
 		} else {
-			let idx = this.data.push(value) - 1;
+			let idx = this.data.push({
+					value : value,
+					ttl : ttl || this.ttl
+				}) - 1;
 			this.keyIndex[key] = idx;
 			this.keyRindex[idx] = key;
 			this.ttlIndex[key] = utls.microtime();
@@ -131,7 +140,7 @@ class Cache {
 	values() {
 		return this.data.filter((v) => {
 			return v !== undefined;
-		});
+		}).map(v => v.value);
 	}
 
 	/**
@@ -145,10 +154,6 @@ class Cache {
 			this.keyRindex[this.keyIndex[key]] = undefined;
 			this.keyIndex[key] = undefined;
 			this.ttlIndex[key] = undefined;
-			/*delete this.data[this.keyIndex[key]];
-			delete this.keyRindex[this.keyIndex[key]];
-			delete this.keyIndex[key];
-			delete this.ttlIndex[key];*/
 			this.count--;
 		}
 	}
@@ -164,7 +169,7 @@ class Cache {
 		var newKeyIndex = {}, newKeyRindex = [], newTtlIndex = {}, newData = [], self = this;
 		// console.time('GC TTL');
 		this.keyRindex.map((key) => {
-			if (this.ttlIndex.hasOwnProperty(key) && utls.microtime() - this.ttlIndex[key] > this.ttl) {
+			if (this.ttlIndex.hasOwnProperty(key) && utls.microtime() - this.ttlIndex[key] > this.data[this.keyIndex[key]].ttl) {
 				this.delete(key);
 			}
 		});
@@ -175,6 +180,7 @@ class Cache {
 		// console.timeEnd('GC TTL filter');
 		// console.time('GC TTL rebuild');
 		this.keyRindex.map((key, index) => {
+			process.stdout.write('r');
 			newKeyIndex[key] = newData.push(self.data[index]);
 			newKeyRindex[newKeyIndex[key]] = key;
 			newTtlIndex[key] = self.ttlIndex[key];
@@ -188,18 +194,9 @@ class Cache {
 		this.ttlIndex = newTtlIndex;
 
 		newData = newKeyIndex = newKeyRindex = newTtlIndex = undefined;
-		// console.timeEnd('GC Reassign');
-		if (this.count > this.limit) {
-			//FIXME
-			console.log("Limit");
-			let diff = this.count - this.limit;
-			let tbd = this.keyRindex.splice(0, diff);
-			tbd.forEach((v) => {
-				self.delete(v);
-			});
-		}
+
 		this.gcInProgress = false;
-		if(!this._stopGC) {
+		if (!this.disableGC && !this._stopGC) {
 			this.gcStart();
 		}
 	}
