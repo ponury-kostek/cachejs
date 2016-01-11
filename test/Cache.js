@@ -7,22 +7,46 @@ var utls = require('utls');
 var Cache = require(__dirname + '/../'), cache;
 describe('Cache', () => {
 	describe('constructing', () => {
-		before(() => {
+		it('correct class', () => {
 			cache = new Cache({
 				limit : 100,
 				ttl : 10,
 				gci : 1
 			});
-		});
-		it('correct class', () => {
 			assert.equal(utls.getType(cache), 'Cache');
+			cache.destroy();
 		});
-		it('options', () => {
+		it('correct options', () => {
+			cache = new Cache({
+				limit : 100,
+				ttl : 10,
+				gci : 1
+			});
 			assert.equal(cache.limit, 100);
 			assert.equal(cache.ttl, 10);
 			assert.equal(cache.gci, 1);
+			cache.destroy();
 		});
-		after(() => {
+		it('-1 options', () => {
+			cache = new Cache({
+				limit : -1,
+				ttl : -1,
+				gci : -1
+			});
+			assert.equal(cache.limit, 1);
+			assert.equal(cache.ttl, 1);
+			assert.equal(cache.gci, 1);
+			cache.destroy();
+		});
+		it('> MAX options', () => {
+			cache = new Cache({
+				limit : Number.MAX_SAFE_INTEGER,
+				ttl : Number.MAX_SAFE_INTEGER,
+				gci : Number.MAX_SAFE_INTEGER
+			});
+			assert.equal(cache.limit, 1048576);
+			assert.equal(cache.ttl, 3600);
+			assert.equal(cache.gci, 86400);
 			cache.destroy();
 		});
 	});
@@ -128,6 +152,9 @@ describe('Cache', () => {
 		});
 		it('is running', () => {
 			assert.equal(cache.gcIsRunning(), true);
+		});
+		it('run', () => {
+			assert.doesNotThrow(cache.gc());
 		});
 		/*it('is running', () => {
 			cache.gcStop();

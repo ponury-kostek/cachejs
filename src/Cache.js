@@ -59,7 +59,7 @@ class Cache {
 	 * @returns {*}
 	 */
 	get(key) {
-		key = typeof key == 'String' ? key : String(key).valueOf();
+		// key = typeof key == 'String' ? key : String(key).valueOf();
 		return this.data[this.keyIndex[key]];
 	}
 
@@ -69,7 +69,7 @@ class Cache {
 	 * @param {*} value
 	 */
 	set(key, value) {
-		key = typeof key == 'String' ? key : String(key).valueOf();
+		// key = typeof key == 'String' ? key : String(key).valueOf();
 		if (this.has(key)) {
 			this.ttlIndex[key] = utls.microtime();
 			this.data[this.keyIndex[key]] = value;
@@ -96,7 +96,7 @@ class Cache {
 	 * @returns {Boolean}
 	 */
 	has(key) {
-		key = typeof key == 'String' ? key : String(key).valueOf();
+		// key = typeof key == 'String' ? key : String(key).valueOf();
 		if (this.keyIndex[key] !== undefined) {
 			if (this.data[this.keyIndex[key]] !== undefined) {
 				return true;
@@ -139,7 +139,7 @@ class Cache {
 	 * @param {String} key
 	 */
 	delete(key) {
-		key = typeof key == 'String' ? key : String(key).valueOf();
+		// key = typeof key == 'String' ? key : String(key).valueOf();
 		if (this.has(key)) {
 			this.data[this.keyIndex[key]] = undefined;
 			this.keyRindex[this.keyIndex[key]] = undefined;
