@@ -154,7 +154,7 @@ describe('Cache', () => {
 			assert.equal(cache.gcIsRunning(), true);
 		});
 		it('run', () => {
-			assert.doesNotThrow(cache.gc());
+			cache.gc();
 		});
 		/*it('is running', () => {
 			cache.gcStop();
