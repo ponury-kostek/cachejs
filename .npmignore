@@ -1,0 +1,12 @@
+/doc/
+/manual/
+/node_modules/
+/test/
+/tests/
+/typings/
+/.vscode/
+/bench/
+/.gitattributes
+/.gitignore
+/.travis.yml
+/tsd.json
