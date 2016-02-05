@@ -1,5 +1,5 @@
 {
-  "name": "etk-cachejs",
+  "name": "@etk/cachejs",
   "version": "0.2.1",
   "description": "Fast, lightweight cache for Node.js",
   "main": "index.js",
