@@ -9,21 +9,19 @@ var maxTtl = 3600;
  * @author Michał Żaloudik <michal.zaloudik@redcart.pl>
  */
 class Cache {
-
 	/**
 	 * Constructor
 	 * @param {Object} [options]
 	 * @param {Number} [options.gci=1000] GC interval in ms
 	 * @param {Number} [options.limit=1048576] Cache entries limit
 	 * @param {Number} [options.ttl=10] Entry TTL in sec
-	 * @param {Boolean} [options.disableGC] Disables GC
+	 * @param {Boolean} [options.disableGC=false] Disables GC
 	 */
 	constructor(options) {
 		options = options || {};
 		options.gci = parseInt(options.gci, 10) || 1000;
 		options.limit = parseInt(options.limit, 10) || maxLimit;
 		options.ttl = parseInt(options.ttl, 10) || 10;
-
 		if (options.limit < 1) {
 			options.limit = 1;
 		}
@@ -55,23 +53,13 @@ class Cache {
 	}
 
 	/**
-	 * Gets value of key if exists
-	 * @param {String} key
-	 * @returns {*}
-	 */
-	get(key) {
-		// key = typeof key == 'String' ? key : String(key).valueOf();
-		return this.data[this.keyIndex[key]] !== undefined ? this.data[this.keyIndex[key]].value : undefined;
-	}
-
-	/**
 	 * Sets
 	 * @param {String} key
 	 * @param {*} value
 	 * @param {Number} ttl
 	 */
 	set(key, value, ttl) {
-		// key = typeof key == 'String' ? key : String(key).valueOf();
+		//key = typeof key == 'string' ? key : String(key).valueOf();
 		if (this.has(key)) {
 			this.ttlIndex[key] = utls.microtime();
 			if (value !== undefined) {
@@ -99,12 +87,22 @@ class Cache {
 	}
 
 	/**
+	 * Gets value of key if exists
+	 * @param {String} key
+	 * @returns {*}
+	 */
+	get(key) {
+		//key = typeof key == 'string' ? key : String(key).valueOf();
+		return this.data[this.keyIndex[key]] !== undefined ? this.data[this.keyIndex[key]].value : undefined;
+	}
+
+	/**
 	 *
 	 * @param {String} key
 	 * @returns {Boolean}
 	 */
 	has(key) {
-		// key = typeof key == 'String' ? key : String(key).valueOf();
+		//key = typeof key == 'string' ? key : String(key).valueOf();
 		if (this.keyIndex[key] !== undefined) {
 			if (this.data[this.keyIndex[key]] !== undefined) {
 				return true;
@@ -114,14 +112,18 @@ class Cache {
 	}
 
 	/**
-	 * Clears cache entries
+	 * Deletes entry
+	 * @param {String} key
 	 */
-	clear() {
-		this.ttlIndex = {};
-		this.keyIndex = {};
-		this.keyRindex = [];
-		this.data = [];
-		this.count = 0;
+	delete(key) {
+		//key = typeof key == 'string' ? key : String(key).valueOf();
+		if (this.has(key)) {
+			this.data[this.keyIndex[key]] = undefined;
+			this.keyRindex[this.keyIndex[key]] = undefined;
+			this.keyIndex[key] = undefined;
+			this.ttlIndex[key] = undefined;
+			this.count--;
+		}
 	}
 
 	/**
@@ -138,23 +140,8 @@ class Cache {
 	 */
 	values() {
 		return this.data.filter((v) => {
-			return v !== undefined;
-		}).map(v => v.value);
-	}
-
-	/**
-	 * Deletes entry
-	 * @param {String} key
-	 */
-	delete(key) {
-		// key = typeof key == 'String' ? key : String(key).valueOf();
-		if (this.has(key)) {
-			this.data[this.keyIndex[key]] = undefined;
-			this.keyRindex[this.keyIndex[key]] = undefined;
-			this.keyIndex[key] = undefined;
-			this.ttlIndex[key] = undefined;
-			this.count--;
-		}
+				return v !== undefined;
+			}).map(v => v.value);
 	}
 
 	/**
@@ -175,7 +162,6 @@ class Cache {
 		// console.timeEnd('GC TTL filter');
 		// console.time('GC TTL rebuild');
 		this.keyRindex.map((key, index) => {
-			process.stdout.write('r');
 			newKeyIndex[key] = newData.push(self.data[index]);
 			newKeyRindex[newKeyIndex[key]] = key;
 			newTtlIndex[key] = self.ttlIndex[key];
@@ -187,9 +173,7 @@ class Cache {
 		this.keyIndex = newKeyIndex;
 		this.keyRindex = newKeyRindex;
 		this.ttlIndex = newTtlIndex;
-
 		newData = newKeyIndex = newKeyRindex = newTtlIndex = undefined;
-
 		if (!this.disableGC && !this._stopGC) {
 			this.gcStart();
 		}
@@ -224,10 +208,20 @@ class Cache {
 		return this._gci !== undefined && this._gci._idleTimeout !== undefined && this._gci._idleTimeout > 0;
 	}
 
+	/**
+	 * Clears cache entries
+	 */
+	clear() {
+		this.ttlIndex = {};
+		this.keyIndex = {};
+		this.keyRindex = [];
+		this.data = [];
+		this.count = 0;
+	}
+
 	destroy() {
 		this.gcStop();
 		this.clear();
 	}
 }
-
 module.exports = Cache;
