@@ -15,7 +15,7 @@ class Cache {
 	 * @param {Number} [options.gci=1000] GC interval in ms
 	 * @param {Number} [options.limit=1048576] Cache entries limit
 	 * @param {Number} [options.ttl=10] Entry TTL in sec
-	 * @param {Boolean} [options.disableGC] Disables GC
+	 * @param {Boolean} [options.disableGC=false] Disables GC
 	 */
 	constructor(options) {
 		options = options || {};
