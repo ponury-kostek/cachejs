@@ -2,6 +2,7 @@
 var maxLimit = 1048576;
 var maxGci = 86400;
 var maxTtl = 3600;
+var overheadRatio = 1.15;
 /**
  * Node.js in memory cache
  *
@@ -78,7 +79,7 @@ class Cache {
 			this.keyIndex[key] = idx;
 			this.keyRindex[idx] = key;
 			this.count++;
-			if (this.count > (1.1 * this.limit)) {
+			if (this.count > (overheadRatio * this.limit)) {
 				this.trim();
 			}
 		}
