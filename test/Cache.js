@@ -10,8 +10,7 @@ describe('Cache', () => {
 		it('correct class', () => {
 			cache = new Cache({
 				limit : 100,
-				ttl : 10,
-				gci : 1
+				ttl : 10
 			});
 			assert.equal(utls.getType(cache), 'Cache');
 			cache.destroy();
@@ -19,34 +18,28 @@ describe('Cache', () => {
 		it('correct options', () => {
 			cache = new Cache({
 				limit : 100,
-				ttl : 10,
-				gci : 1
+				ttl : 10
 			});
 			assert.equal(cache.limit, 100);
 			assert.equal(cache.ttl, 10);
-			assert.equal(cache.gci, 1);
 			cache.destroy();
 		});
 		it('-1 options', () => {
 			cache = new Cache({
 				limit : -1,
-				ttl : -1,
-				gci : -1
+				ttl : -1
 			});
 			assert.equal(cache.limit, 1);
 			assert.equal(cache.ttl, 1);
-			assert.equal(cache.gci, 1);
 			cache.destroy();
 		});
 		it('> MAX options', () => {
 			cache = new Cache({
 				limit : Number.MAX_SAFE_INTEGER,
-				ttl : Number.MAX_SAFE_INTEGER,
-				gci : Number.MAX_SAFE_INTEGER
+				ttl : Number.MAX_SAFE_INTEGER
 			});
 			assert.equal(cache.limit, 1048576);
 			assert.equal(cache.ttl, 3600);
-			assert.equal(cache.gci, 86400);
 			cache.destroy();
 		});
 	});
@@ -54,8 +47,7 @@ describe('Cache', () => {
 		before(() => {
 			cache = new Cache({
 				limit : 1000,
-				ttl : 1000,
-				gci : 1000
+				ttl : 1000
 			});
 		});
 		describe('SET', () => {
@@ -115,7 +107,6 @@ describe('Cache', () => {
 				assert.deepEqual(cache.keys(), [key]);
 			});
 		});
-
 		describe('DELETE', () => {
 			let key = 'someKey';
 			let value = {
@@ -128,10 +119,9 @@ describe('Cache', () => {
 				cache.clear();
 				cache.set(key, value);
 				//console.log(require('util').inspect(cache, {depth : 999}));
-				cache.delete(key);
+				cache.remove(key);
 			});
 			it('get(key)', () => {
-				assert.thro
 				assert.deepEqual(cache.get(key), undefined);
 			});
 			it('values()', () => {
@@ -140,32 +130,6 @@ describe('Cache', () => {
 			it('keys()', () => {
 				assert.deepEqual(cache.keys(), []);
 			});
-		});
-		after(() => {
-			cache.destroy();
-		});
-	});
-	describe('GC', () => {
-		let key = 'someKey';
-		let value = {
-			someProperty : "somePropertyValue",
-			someMethod : () => {
-				return 'someMethodResult';
-			}
-		};
-		beforeEach(() => {
-			cache = new Cache();
-			cache.set(key, value);
-		});
-		it('is running', () => {
-			assert.equal(cache.gcIsRunning(), true);
-		});
-		it('is running (disableGC:true)', () => {
-			cache = new Cache({disableGC : true});
-			assert.equal(cache.gcIsRunning(), false);
-		});
-		it('run', () => {
-			cache.gc();
 		});
 		after(() => {
 			cache.destroy();

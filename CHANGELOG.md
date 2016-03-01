@@ -9,3 +9,8 @@ This file describes notable changes in each version of Cache.
 + Added mocha tests
 + Added posibility to disable GC
 + Added options parameter `ttl` for `set` method
+
+## 0.3.0
++ Fixed gc long lock
++ Optimal limit = 100000
++ Code cleanup

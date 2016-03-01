@@ -2,7 +2,7 @@
 var Cache = require('../');
 var m = process.memoryUsage();
 var i = 0;
-var entries = 100000;
+var entries = 1000000;
 var keys = [];
 for(i = 0; i< entries; i++) {
 	keys.push(`key${i}_${Math.random()}`);
@@ -53,7 +53,7 @@ for (i = 0; i < entries; i++) {
 	ents.push(obj);
 }
 console.time("TOTAL");
-var cache = new Cache({gci : 10000});
+var cache = new Cache({gci : 10000, limit: 100000});
 console.time("SET");
 for (i = 0; i < entries; i++) {
 	cache.set(keys[i], ents[i]);

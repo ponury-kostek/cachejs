@@ -1,6 +1,5 @@
 "use strict";
-var utls = require("utls");
-var maxLimit = 1048576; // 1M
+var maxLimit = 1048576;
 var maxGci = 86400;
 var maxTtl = 3600;
 /**
@@ -59,29 +58,28 @@ class Cache {
 	 * @param {Number} ttl
 	 */
 	set(key, value, ttl) {
-		//key = typeof key == 'string' ? key : String(key).valueOf();
 		if (this.has(key)) {
-			this.ttlIndex[key] = utls.microtime();
 			if (value !== undefined) {
-				this.data[this.keyIndex[key]].value = value;
-			}
-			this.data[this.keyIndex[key]].ttl = ttl || this.ttl;
-		} else {
-			let idx = this.data.push({
+				clearTimeout(this.data[this.keyIndex[key]].timeout);
+				this.data[this.keyIndex[key]] = {
 					value : value,
-					ttl : ttl || this.ttl
+					timeout : setTimeout(() => {
+						this.remove(key);
+					}, (ttl || this.ttl) * 1000)
+				};
+			}
+		} else {
+			var idx = this.data.push({
+					value : value,
+					timeout : setTimeout(() => {
+						this.remove(key);
+					}, (ttl || this.ttl) * 1000)
 				}) - 1;
 			this.keyIndex[key] = idx;
 			this.keyRindex[idx] = key;
-			this.ttlIndex[key] = utls.microtime();
 			this.count++;
-			if (this.count > this.limit) {
-				for (let i = 0; i < this.keyRindex.length; i++) {
-					if (this.keyRindex[i] !== undefined) {
-						this.delete(this.keyRindex[i]);
-						break;
-					}
-				}
+			if (this.count > (1.1 * this.limit)) {
+				this.trim();
 			}
 		}
 	}
@@ -92,7 +90,6 @@ class Cache {
 	 * @returns {*}
 	 */
 	get(key) {
-		//key = typeof key == 'string' ? key : String(key).valueOf();
 		return this.data[this.keyIndex[key]] !== undefined ? this.data[this.keyIndex[key]].value : undefined;
 	}
 
@@ -102,7 +99,6 @@ class Cache {
 	 * @returns {Boolean}
 	 */
 	has(key) {
-		//key = typeof key == 'string' ? key : String(key).valueOf();
 		if (this.keyIndex[key] !== undefined) {
 			if (this.data[this.keyIndex[key]] !== undefined) {
 				return true;
@@ -115,13 +111,13 @@ class Cache {
 	 * Deletes entry
 	 * @param {String} key
 	 */
-	delete(key) {
-		//key = typeof key == 'string' ? key : String(key).valueOf();
+	remove(key) {
 		if (this.has(key)) {
-			this.data[this.keyIndex[key]] = undefined;
-			this.keyRindex[this.keyIndex[key]] = undefined;
+			var idx = this.keyIndex[key];
+			clearTimeout(this.data[idx].timeout);
+			this.data[idx] = undefined;
+			this.keyRindex[idx] = undefined;
 			this.keyIndex[key] = undefined;
-			this.ttlIndex[key] = undefined;
 			this.count--;
 		}
 	}
@@ -140,40 +136,30 @@ class Cache {
 	 */
 	values() {
 		return this.data.filter((v) => {
-				return v !== undefined;
-			}).map(v => v.value);
+			return v !== undefined;
+		}).map(v => v.value);
 	}
 
 	/**
 	 * Garbage collecting
 	 */
 	gc() {
-		var newKeyIndex = {}, newKeyRindex = [], newTtlIndex = {}, newData = [], self = this;
-		// console.time('GC TTL');
-		this.keyRindex.map((key) => {
-			if (this.ttlIndex.hasOwnProperty(key) && utls.microtime() - this.ttlIndex[key] > this.data[this.keyIndex[key]].ttl) {
-				this.delete(key);
+		var newKeyIndex = {}, newKeyRindex = [], newData = [];
+		if (this.count > this.limit) {
+			this.trim();
+		}
+		this.count = 0;
+		this.keyRindex.map((key, index) => {
+			if (key !== undefined) {
+				newKeyIndex[key] = newData.push(this.data[index]);
+				newKeyRindex[newKeyIndex[key]] = key;
+				this.count++;
 			}
 		});
-		// console.timeEnd('GC TTL');
-		this.count = 0;
-		// console.time('GC TTL filter');
-		this.keyRindex = this.keyRindex.filter(v => v !== undefined);
-		// console.timeEnd('GC TTL filter');
-		// console.time('GC TTL rebuild');
-		this.keyRindex.map((key, index) => {
-			newKeyIndex[key] = newData.push(self.data[index]);
-			newKeyRindex[newKeyIndex[key]] = key;
-			newTtlIndex[key] = self.ttlIndex[key];
-			self.count++;
-		});
-		// console.timeEnd('GC TTL rebuild');
-		// console.time('GC Reassign');
 		this.data = newData;
 		this.keyIndex = newKeyIndex;
 		this.keyRindex = newKeyRindex;
-		this.ttlIndex = newTtlIndex;
-		newData = newKeyIndex = newKeyRindex = newTtlIndex = undefined;
+		newData = newKeyIndex = newKeyRindex = undefined;
 		if (!this.disableGC && !this._stopGC) {
 			this.gcStart();
 		}
@@ -185,7 +171,9 @@ class Cache {
 	gcStart() {
 		this._stopGC = false;
 		if (!this.gcIsRunning()) {
-			this._gci = setTimeout(this.gc, this.gci * 1000);
+			this._gci = setTimeout(() => {
+				this.gc();
+			}, this.gci * 1000);
 			this._gci.unref();
 		}
 	}
@@ -212,16 +200,40 @@ class Cache {
 	 * Clears cache entries
 	 */
 	clear() {
-		this.ttlIndex = {};
 		this.keyIndex = {};
 		this.keyRindex = [];
+		if (this.data) {
+			this.data.map((item) => {
+				if (item !== undefined) {
+					clearTimeout(item.timeout);
+				}
+			});
+		}
 		this.data = [];
 		this.count = 0;
 	}
 
+	/**
+	 * Stops gc and clears all data including timeouts
+	 */
 	destroy() {
 		this.gcStop();
 		this.clear();
+	}
+
+	/**
+	 * Trims cache to setted limit
+	 */
+	trim() {
+		var length = this.data.length;
+		for (var i = 0; i < length; i++) {
+			if (this.keyRindex[i] !== undefined) {
+				this.remove(this.keyRindex[i]);
+				if (this.count <= this.limit) {
+					return;
+				}
+			}
+		}
 	}
 }
 module.exports = Cache;
