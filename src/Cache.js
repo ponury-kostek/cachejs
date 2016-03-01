@@ -1,5 +1,4 @@
 "use strict";
-var utls = require("utls");
 var maxLimit = 1048576;
 var maxGci = 86400;
 var maxTtl = 3600;
@@ -59,7 +58,6 @@ class Cache {
 	 * @param {Number} ttl
 	 */
 	set(key, value, ttl) {
-		//key = typeof key == 'string' ? key : String(key).valueOf();
 		if (this.has(key)) {
 			if (value !== undefined) {
 				clearTimeout(this.data[this.keyIndex[key]].timeout);
@@ -81,7 +79,7 @@ class Cache {
 			this.keyRindex[idx] = key;
 			this.count++;
 			if (this.count > (1.1 * this.limit)) {
-				this._trim();
+				this.trim();
 			}
 		}
 	}
@@ -92,7 +90,6 @@ class Cache {
 	 * @returns {*}
 	 */
 	get(key) {
-		//key = typeof key == 'string' ? key : String(key).valueOf();
 		return this.data[this.keyIndex[key]] !== undefined ? this.data[this.keyIndex[key]].value : undefined;
 	}
 
@@ -102,7 +99,6 @@ class Cache {
 	 * @returns {Boolean}
 	 */
 	has(key) {
-		//key = typeof key == 'string' ? key : String(key).valueOf();
 		if (this.keyIndex[key] !== undefined) {
 			if (this.data[this.keyIndex[key]] !== undefined) {
 				return true;
@@ -116,7 +112,6 @@ class Cache {
 	 * @param {String} key
 	 */
 	remove(key) {
-		//key = typeof key == 'string' ? key : String(key).valueOf();
 		if (this.has(key)) {
 			var idx = this.keyIndex[key];
 			clearTimeout(this.data[idx].timeout);
@@ -151,20 +146,9 @@ class Cache {
 	gc() {
 		var newKeyIndex = {}, newKeyRindex = [], newData = [];
 		if (this.count > this.limit) {
-			this._trim();
+			this.trim();
 		}
-		// console.time('GC TTL');
-		/*this.keyRindex.map((key) => {
-			if (this.ttlIndex.hasOwnProperty(key) && utls.microtime() - this.ttlIndex[key] > this.data[this.keyIndex[key]].ttl) {
-				this.delete(key);
-			}
-		});*/
-		// console.timeEnd('GC TTL');
 		this.count = 0;
-		// console.time('GC TTL filter');
-		//this.keyRindex = this.keyRindex.filter(v => v !== undefined);
-		// console.timeEnd('GC TTL filter');
-		// console.time('GC TTL rebuild');
 		this.keyRindex.map((key, index) => {
 			if (key !== undefined) {
 				newKeyIndex[key] = newData.push(this.data[index]);
@@ -172,8 +156,6 @@ class Cache {
 				this.count++;
 			}
 		});
-		// console.timeEnd('GC TTL rebuild');
-		// console.time('GC Reassign');
 		this.data = newData;
 		this.keyIndex = newKeyIndex;
 		this.keyRindex = newKeyRindex;
@@ -232,7 +214,7 @@ class Cache {
 	}
 
 	/**
-	 *
+	 * Stops gc and clears all data including timeouts
 	 */
 	destroy() {
 		this.gcStop();
@@ -240,10 +222,9 @@ class Cache {
 	}
 
 	/**
-	 *
-	 * @private
+	 * Trims cache to setted limit
 	 */
-	_trim() {
+	trim() {
 		var length = this.data.length;
 		for (var i = 0; i < length; i++) {
 			if (this.keyRindex[i] !== undefined) {
