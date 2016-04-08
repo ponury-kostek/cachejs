@@ -1,8 +1,9 @@
 "use strict";
-var maxLimit = 1048576;
+var maxLimit = /*1048576*/ 5000000;
 var maxGci = 86400;
 var maxTtl = 3600;
 var overheadRatio = 1.15;
+var utls = require('utls');
 /**
  * Node.js in memory cache
  *
@@ -47,9 +48,31 @@ class Cache {
 		this.count = 0;
 		this._stopGC = false;
 		this.clear();
+		this.clearStatistics();
 		if (!this.disableGC && this.gci > 0) {
 			this.gcStart();
 		}
+	}
+
+	clearStatistics() {
+		this.statistics = {
+			resets : 0,
+			obsolate : 0,
+			hits : 0,
+			misses : 0,
+			removed : 0,
+			gcCycles : 0,
+			trims : 0,
+			trimedItems : 0,
+			new : 0
+		};
+	}
+
+	getStatistics() {
+		var statistics = utls.vcopy(this.statistics);
+		statistics.count = this.count;
+		this.clearStatistics();
+		return statistics;
 	}
 
 	/**
@@ -60,19 +83,23 @@ class Cache {
 	 */
 	set(key, value, ttl) {
 		if (this.has(key)) {
+			this.statistics.resets++;
 			if (value !== undefined) {
 				clearTimeout(this.data[this.keyIndex[key]].timeout);
 				this.data[this.keyIndex[key]] = {
 					value : value,
 					timeout : setTimeout(() => {
+						this.statistics.obsolate++;
 						this.remove(key);
 					}, (ttl || this.ttl) * 1000)
 				};
 			}
 		} else {
+			this.statistics.new++;
 			var idx = this.data.push({
 					value : value,
 					timeout : setTimeout(() => {
+						this.statistics.obsolate++;
 						this.remove(key);
 					}, (ttl || this.ttl) * 1000)
 				}) - 1;
@@ -102,9 +129,11 @@ class Cache {
 	has(key) {
 		if (this.keyIndex[key] !== undefined) {
 			if (this.data[this.keyIndex[key]] !== undefined) {
+				this.statistics.hits++;
 				return true;
 			}
 		}
+		this.statistics.misses++;
 		return false;
 	}
 
@@ -114,6 +143,7 @@ class Cache {
 	 */
 	remove(key) {
 		if (this.has(key)) {
+			this.statistics.removed++;
 			var idx = this.keyIndex[key];
 			clearTimeout(this.data[idx].timeout);
 			this.data[idx] = undefined;
@@ -145,6 +175,7 @@ class Cache {
 	 * Garbage collecting
 	 */
 	gc() {
+		this.statistics.gcCycles++;
 		var newKeyIndex = {}, newKeyRindex = [], newData = [];
 		if (this.count > this.limit) {
 			this.trim();
@@ -226,9 +257,11 @@ class Cache {
 	 * Trims cache to setted limit
 	 */
 	trim() {
+		this.statistics.trims++;
 		var length = this.data.length;
 		for (var i = 0; i < length; i++) {
 			if (this.keyRindex[i] !== undefined) {
+				this.statistics.trimedItems++;
 				this.remove(this.keyRindex[i]);
 				if (this.count <= this.limit) {
 					return;

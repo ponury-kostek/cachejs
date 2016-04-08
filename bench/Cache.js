@@ -2,12 +2,12 @@
 var Cache = require('../');
 var m = process.memoryUsage();
 var i = 0;
-var entries = 100000;
+var entries = 2500000;
 var keys = [];
 for(i = 0; i< entries; i++) {
 	keys.push(`key${i}_${Math.random()}`);
 }
-for (var r = 0; r < 50; r++) {
+for (var r = 0; r < -50; r++) {
 	(()=> {
 		var entries = 100;
 		var ents = [];
@@ -53,13 +53,13 @@ for (i = 0; i < entries; i++) {
 	ents.push(obj);
 }
 console.time("TOTAL");
-var cache = new Cache({gci : 10000});
+var cache = new Map()//new Cache({gci : 2500000});
 console.time("SET");
 for (i = 0; i < entries; i++) {
 	cache.set(keys[i], ents[i]);
 }
 console.timeEnd("SET");
-console.log("Cache.count: " + cache.count);
+console.log("Cache.count: " + cache.size);
 var md = process.memoryUsage();
 console.log("rss: " + ((m.rss) / (1024 * 1024)) + "\t\theapTotal: " + ((m.heapTotal) / (1024 * 1024)) + "\t\theapUsed: " + ((m.heapUsed) / (1024 * 1024)));
 console.log("rss: " + ((md.rss) / (1024 * 1024)) + "\t\theapTotal: " + ((md.heapTotal) / (1024 * 1024)) + "\t\theapUsed: " + ((md.heapUsed) / (1024 * 1024)));
@@ -81,15 +81,15 @@ console.time('VALUES');
 cache.values();
 console.timeEnd('VALUES');
 console.time('GC');
-cache.gc();
+//cache.gc();
 console.timeEnd('GC');
 console.time("PREDEL");
 var tbd = cache.keys();
 console.timeEnd("PREDEL");
 console.time("DELETE");
-tbd.map((key) => {
-	cache.remove(key);
-});
+/*tbd.map((key) => {
+	cache.delete(key);
+});*/
 console.timeEnd("DELETE");
-cache.destroy();
+//cache.destroy();
 console.timeEnd("TOTAL");
