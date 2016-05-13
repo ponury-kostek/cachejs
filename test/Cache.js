@@ -46,7 +46,7 @@ describe('Cache', () => {
 	describe('Base', () => {
 		before(() => {
 			cache = new Cache({
-				limit : 1000,
+				limit : 2,
 				ttl : 1000
 			});
 		});
@@ -131,6 +131,26 @@ describe('Cache', () => {
 				assert.deepEqual(cache.keys(), []);
 			});
 		});
+		/*describe('TRIM', () => {
+			before(() => {
+				cache.clear();
+			});
+			it('', () => {
+				for (var i = 0; i < 10; i++) {
+					cache.set('i' + i, {i : i});
+				}
+			});
+		});*/
+		/*describe('GC', () => {
+			it('', () => {
+				cache.gc();
+			});
+		});*/
+		/*describe('GETSTATISTICS', () => {
+			it('', () => {
+				console.log(cache.getStatistics());
+			});
+		});*/
 		after(() => {
 			cache.destroy();
 		});

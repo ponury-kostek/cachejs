@@ -1,5 +1,5 @@
 "use strict";
-var maxLimit = /*1048576*/ 5000000;
+var maxLimit = 1048576;
 var maxGci = 86400;
 var maxTtl = 3600;
 var overheadRatio = 1.15;
@@ -46,7 +46,6 @@ class Cache {
 		this.gci = options.gci;
 		this.disableGC = !!options.disableGC;
 		this.count = 0;
-		this._stopGC = false;
 		this.clear();
 		this.clearStatistics();
 		if (!this.disableGC && this.gci > 0) {
@@ -70,6 +69,7 @@ class Cache {
 
 	getStatistics() {
 		var statistics = utls.vcopy(this.statistics);
+		statistics.limit = this.limit;
 		statistics.count = this.count;
 		this.clearStatistics();
 		return statistics;
@@ -118,7 +118,12 @@ class Cache {
 	 * @returns {*}
 	 */
 	get(key) {
-		return this.data[this.keyIndex[key]] !== undefined ? this.data[this.keyIndex[key]].value : undefined;
+		if (this.data[this.keyIndex[key]] !== undefined) {
+			this.statistics.hits++;
+			return this.data[this.keyIndex[key]].value;
+		} else {
+			this.statistics.misses++;
+		}
 	}
 
 	/**
@@ -129,11 +134,9 @@ class Cache {
 	has(key) {
 		if (this.keyIndex[key] !== undefined) {
 			if (this.data[this.keyIndex[key]] !== undefined) {
-				this.statistics.hits++;
 				return true;
 			}
 		}
-		this.statistics.misses++;
 		return false;
 	}
 
@@ -183,7 +186,7 @@ class Cache {
 		this.count = 0;
 		this.keyRindex.map((key, index) => {
 			if (key !== undefined) {
-				newKeyIndex[key] = newData.push(this.data[index]);
+				newKeyIndex[key] = newData.push(this.data[index]) - 1;
 				newKeyRindex[newKeyIndex[key]] = key;
 				this.count++;
 			}
