@@ -118,7 +118,7 @@ class Cache {
 	 * @returns {*}
 	 */
 	get(key) {
-		if (this.data[this.keyIndex[key]] !== undefined) {
+		if (this.keyIndex[key] !== undefined) {
 			this.statistics.hits++;
 			return this.data[this.keyIndex[key]].value;
 		} else {
@@ -132,12 +132,7 @@ class Cache {
 	 * @returns {Boolean}
 	 */
 	has(key) {
-		if (this.keyIndex[key] !== undefined) {
-			if (this.data[this.keyIndex[key]] !== undefined) {
-				return true;
-			}
-		}
-		return false;
+		return this.keyIndex[key] !== undefined;
 	}
 
 	/**
