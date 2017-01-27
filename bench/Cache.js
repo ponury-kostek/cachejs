@@ -1,14 +1,15 @@
 "use strict";
 var Cache = require('../');
+var utls = require('utls');
 var m = process.memoryUsage();
 var i = 0;
-var entries = 100000;
+var entries = 1000000;
 var keys = [];
-for(i = 0; i< entries; i++) {
+for (i = 0; i < entries; i++) {
 	keys.push(`key${i}_${Math.random()}`);
 }
-for (var r = 0; r < -50; r++) {
-	(()=> {
+/*for (var r = 0; r < -50; r++) {
+	(() => {
 		var entries = 100;
 		var ents = [];
 		for (i = 0; i < entries; i++) {
@@ -21,7 +22,7 @@ for (var r = 0; r < -50; r++) {
 			};
 			ents.push(obj);
 		}
-		var cache = new Cache({gci : 10000});
+		var cache = new Cache({maxLength : 10000});
 		for (i = 0; i < entries; i++) {
 			cache.set(keys[i], ents[i]);
 		}
@@ -31,35 +32,31 @@ for (var r = 0; r < -50; r++) {
 		for (i = 0; i < entries; i++) {
 			cache.get(keys[i]);
 		}
-		cache.gc();
-		var tbd = cache.keys();
-		tbd.map((key) => {
-			cache.remove(key);
-		});
+
 	})();
-}
+}*/
 var ents = [];
-for(i = 0; i< entries; i++) {
-	keys.push(`key${i}_${Math.random()}`);
-}
 for (i = 0; i < entries; i++) {
-	var propName = `someProp${i}`;
-	var methName = `someMeth${i}`;
+	keys.push('key' + i + '_' + Math.random());
+}
+for (let i = 0; i < entries; i++) {
+	var propName = 'someProp' + i;
+	var methName = 'someMeth' + i;
 	var obj = {};
-	obj[propName] = `Some unique property value ${i}`;
+	obj[propName] = 'Some unique property value ' + i;
 	obj[methName] = () => {
-		return `${i}`
+		return String(i);
 	};
 	ents.push(obj);
 }
 console.time("TOTAL");
-var cache = new Cache({gci : 2500000});
+var cache = new Cache({maxLength : 2500000, maxAge: 100});
 console.time("SET");
 for (i = 0; i < entries; i++) {
 	cache.set(keys[i], ents[i]);
 }
 console.timeEnd("SET");
-console.log("Cache.count: " + cache.size);
+console.log("Cache.count: " + cache.size());
 var md = process.memoryUsage();
 console.log("rss: " + ((m.rss) / (1024 * 1024)) + "\t\theapTotal: " + ((m.heapTotal) / (1024 * 1024)) + "\t\theapUsed: " + ((m.heapUsed) / (1024 * 1024)));
 console.log("rss: " + ((md.rss) / (1024 * 1024)) + "\t\theapTotal: " + ((md.heapTotal) / (1024 * 1024)) + "\t\theapUsed: " + ((md.heapUsed) / (1024 * 1024)));
@@ -70,26 +67,10 @@ for (i = 0; i < entries; i++) {
 }
 console.timeEnd("HAS");
 console.time("GET");
+var getStart = utls.microtime();
 for (i = 0; i < entries; i++) {
 	cache.get(keys[i]);
 }
+var getTime = utls.microtime() - getStart;
+console.log('%d entries in %ds, %dops', entries, getTime, (entries / getTime).toFixed(2));
 console.timeEnd("GET");
-console.time('KEYS');
-cache.keys();
-console.timeEnd('KEYS');
-console.time('VALUES');
-cache.values();
-console.timeEnd('VALUES');
-console.time('GC');
-//cache.gc();
-console.timeEnd('GC');
-console.time("PREDEL");
-var tbd = cache.keys();
-console.timeEnd("PREDEL");
-console.time("DELETE");
-/*tbd.map((key) => {
-	cache.delete(key);
-});*/
-console.timeEnd("DELETE");
-//cache.destroy();
-console.timeEnd("TOTAL");
