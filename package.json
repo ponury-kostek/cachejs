@@ -24,7 +24,7 @@
   "homepage": "https://github.com/etk-pl/cachejs#readme",
   "dependencies": {
     "utls": "^0.2.22",
-    "yadll": "^0.1.1"
+    "yadll": "^0.1.2"
   },
   "devDependencies": {
     "benchmark": "^2.1.3",

@@ -50,7 +50,7 @@ for (let i = 0; i < entries; i++) {
 	ents.push(obj);
 }
 console.time("TOTAL");
-var cache = new Cache({maxLength : 2500000, maxAge: 100});
+var cache = new Cache({limit : 1, ttl: 100});
 console.time("SET");
 for (i = 0; i < entries; i++) {
 	cache.set(keys[i], ents[i]);
