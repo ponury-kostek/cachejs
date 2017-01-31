@@ -3,7 +3,7 @@ var Cache = require('../');
 var utls = require('utls');
 var m = process.memoryUsage();
 var i = 0;
-var entries = 1000000;
+var entries = 100000;
 var keys = [];
 for (i = 0; i < entries; i++) {
 	keys.push(`key${i}_${Math.random()}`);
@@ -50,7 +50,7 @@ for (let i = 0; i < entries; i++) {
 	ents.push(obj);
 }
 console.time("TOTAL");
-var cache = new Cache({limit : 1, ttl: 100});
+var cache = new Cache({limit : 1000000, ttl: 100});
 console.time("SET");
 for (i = 0; i < entries; i++) {
 	cache.set(keys[i], ents[i]);

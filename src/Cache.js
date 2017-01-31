@@ -4,29 +4,46 @@
  * @author Michał Żaloudik <michal.zaloudik@redcart.pl>
  */
 "use strict";
-const utls = require('utls');
 const Yadll = require('yadll');
+/**
+ * @typedef {{size: number, hits: number, misses: number, expires: number, updates: number, trims: number}} CacheItem
+ */
+/**
+ *
+ */
+var __now;
+/**
+ *
+ * @private
+ */
+function ___update_now() {
+	__now = Date.now();
+	__update_now();
+}
+/**
+ *
+ * @private
+ */
+function __update_now() {
+	setTimeout(___update_now, 10).unref();
+}
+___update_now();
 /**
  *
  * @param {*} key
  * @param {*} value
  * @param {Yadll} dll
  * @param {Number} ttl
- * @constructor
+ * @returns {CacheItem}
  */
-function CacheItem(key, value, dll, ttl) {
-	this.key = key;
-	this.dllNode = dll.unshift(key);
-	this.value = value;
-	this.expireAt = ttl > 0 ? utls.microtime() + ttl : 0;
+function cacheItem(key, value, dll, ttl) {
+	return {
+		key : key,
+		dllNode : dll.unshift(key),
+		value : value,
+		expireAt : ttl > 0 ? __now + ttl : 0
+	};
 }
-/**
- *
- */
-CacheItem.prototype.touch = function () {
-	this.dllNode.list.unshift(this.dllNode);
-	return this;
-};
 /**
  *
  * @param options
@@ -49,13 +66,39 @@ function LRUCache(options) {
 }
 /**
  *
+ * @param item
+ * @returns {*}
+ */
+LRUCache.prototype.touch = function (item) {
+	this.dll.unshift(item.dllNode);
+	return item;
+};
+/**
+ *
  */
 LRUCache.prototype.clearStats = function () {
 	this.stats = {
 		hits : 0,
 		misses : 0,
 		expires : 0,
-		updates : 0
+		updates : 0,
+		deletes : 0,
+		trims : 0
+	};
+};
+/**
+ *
+ * @returns {{size: number, hits: number, misses: number, expires: number, updates: number, trims: number}}
+ */
+LRUCache.prototype.getStats = function () {
+	return {
+		size : this.map.size,
+		hits : this.stats.hits,
+		misses : this.stats.misses,
+		expires : this.stats.expires,
+		updates : this.stats.updates,
+		deletes : this.stats.deletes,
+		trims : this.stats.trims
 	};
 };
 /**
@@ -70,12 +113,10 @@ LRUCache.prototype.set = function (key, value, ttl) {
 		const item = this.getItem(key);
 		item.value = value;
 		this.stats.updates++;
-		return item;
+		return this.touch(item);
 	}
-	if (!(value instanceof CacheItem)) {
-		value = new CacheItem(key, value, this.dll, ttl || this.ttl || 0);
-	}
-	return this.setItem(key, value);
+	const item = cacheItem(key, value, this.dll, ttl || this.ttl || 0);
+	return this.setItem(key, item);
 };
 /**
  *
@@ -88,12 +129,12 @@ LRUCache.prototype.get = function (key) {
 	}
 	this.stats.hits++;
 	const item = this.getItem(key);
-	if (item.expireAt !== 0 && item.expireAt < utls.microtime()) {
+	if (item.expireAt !== 0 && item.expireAt < __now) {
 		this.stats.expires++;
-		this.delete(key);
+		this.deleteItem(key);
 		return;
 	}
-	return item.touch().value;
+	return this.touch(item).value;
 };
 /**
  *
@@ -120,13 +161,13 @@ LRUCache.prototype.has = function (key) {
 /**
  *
  * @param {*} key
- * @param {CacheItem}item
+ * @param {CacheItem} item
  * @returns {*}
  */
 LRUCache.prototype.setItem = function (key, item) {
 	if (this.map.has(key)) {
 		if (this.map.get(key) === item) {
-			return item.touch();
+			return this.touch(item);
 		}
 		this.deleteItem(key);
 	}
@@ -164,6 +205,7 @@ LRUCache.prototype.deleteItem = function (key) {
 			item.dllNode.list.cut(item.dllNode);
 		}
 		this.map.delete(key);
+		this.stats.deletes++;
 		return true;
 	}
 	return false;
@@ -173,6 +215,7 @@ LRUCache.prototype.deleteItem = function (key) {
  * @returns {Boolean}
  */
 LRUCache.prototype.trim = function () {
+	this.stats.trims++;
 	return this.deleteItem(this.dll.pop().value);
 };
 /**
@@ -187,21 +230,22 @@ LRUCache.prototype.size = function () {
  */
 LRUCache.prototype.clear = function () {
 	this.map.clear();
+	this.clearStats();
 	this.dll.clear();
 };
 /**
  *
- * @returns {Iterator.<K>}
+ * @returns {Iterator.<String>}
  */
 LRUCache.prototype.keys = function () {
 	return this.map.keys();
 };
 /**
  *
- * @returns {Iterator.<V>}
+ * @returns {Iterator.<*>}
  */
 LRUCache.prototype.values = function () {
 	return this.map.values();
 };
 module.exports = LRUCache;
-module.exports.CacheItem = CacheItem;
+module.exports.CacheItem = cacheItem;
