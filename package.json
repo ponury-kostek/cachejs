@@ -1,10 +1,10 @@
 {
   "name": "@etk/cachejs",
-  "version": "0.3.2",
+  "version": "1.0.0",
   "description": "Fast, lightweight cache for Node.js",
   "main": "index.js",
   "scripts": {
-    "test": "./node_modules/.bin/istanbul cover ./node_modules/mocha/bin/_mocha --report lcovonly -- -R spec && cat ./coverage/lcov.info | ./node_modules/coveralls/bin/coveralls.js && rm -rf ./coverage",
+    "test": "./node_modules/.bin/istanbul cover ./node_modules/mocha/bin/_mocha -- -R spec && cat ./coverage/lcov.info | ./node_modules/coveralls/bin/coveralls.js && rm -rf ./coverage",
     "gh-pages-docs": "./node_modules/.bin/jsdoc -c ./.jsdocrc -r -R ./README.md -d ../../gh-pages/cachejs/ src/"
   },
   "repository": {
@@ -23,14 +23,16 @@
   },
   "homepage": "https://github.com/etk-pl/cachejs#readme",
   "dependencies": {
-    "utls": "^0.2.10"
+    "utls": "^0.2.22",
+    "yadll": "^0.1.2"
   },
   "devDependencies": {
-    "coveralls": "^2.11.6",
-    "ink-docstrap": "^1.1.2",
-    "jsdoc": "^3.4.0",
-    "istanbul": "^0.4.1",
-    "mocha": "^2.3.4",
-    "mocha-lcov-reporter": "^1.0.0"
+    "benchmark": "^2.1.3",
+    "coveralls": "^2.11.15",
+    "ink-docstrap": "^1.3.0",
+    "istanbul": "^0.4.5",
+    "jsdoc": "^3.4.3",
+    "mocha": "^2.5.3",
+    "mocha-lcov-reporter": "^1.2.0"
   }
 }
