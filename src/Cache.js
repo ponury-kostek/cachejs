@@ -1,7 +1,7 @@
 /**
  * Node.js in memory cache
  *
- * @author Michał Żaloudik <michal.zaloudik@redcart.pl>
+ * @author Michał Żaloudik <ponury.kostek@gmail.com>
  */
 "use strict";
 const Yadll = require('yadll');
@@ -153,6 +153,12 @@ LRUCache.prototype.has = function (key) {
 	const result = this.map.has(key);
 	if (result === true) {
 		this.stats.hits++;
+		const item = this.map.get(key);
+		if (item.expireAt !== 0 && item.expireAt < __now) {
+			this.stats.expires++;
+			this.deleteItem(key);
+			return false;
+		}
 	} else {
 		this.stats.misses++;
 	}

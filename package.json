@@ -1,6 +1,6 @@
 {
   "name": "@etk/cachejs",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Fast, lightweight cache for Node.js",
   "main": "index.js",
   "scripts": {
@@ -16,7 +16,7 @@
     "fast",
     "lightweight"
   ],
-  "author": "Michał Żaloudik <michal.zaloudik@redcart.pl>",
+  "author": "Michał Żaloudik <ponury.kostek@gmail.com>",
   "license": "ISC",
   "bugs": {
     "url": "https://github.com/etk-pl/cachejs/issues"
