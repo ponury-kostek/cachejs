@@ -7,7 +7,7 @@ const suite = new Benchmark.Suite;
 const Cache = require('../');
 const dll = new Cache({
 	limit : 5e5,
-	ttl : 1e6
+	ttl : 1e9
 });
 for (var i = 0; i < 1e5; i++) {
 	dll.set('' + i, i);
@@ -29,4 +29,5 @@ suite.add('Cache.set', function () {
 }).on('complete', function () {
 	//console.log('Fastest is ' + this.filter('fastest').map('name').join(', '));
 	console.log('size', dll.size ? dll.size() : dll.count);
+	console.log('stats', dll.getStats());
 }).run({'async' : true});
